@@ -1,80 +1,19 @@
 #!/usr/bin/env python3
 
 import socket
-import time
 
-HOST = '127.0.0.1'  # The server's hostname or IP address
-PORT = 65432        # The port used by the server 
+HOST = '0.0.0.0'  # Standard loopback interface address (localhost)
+PORT = 65432        # Port to listen on (non-privileged ports are > 1023)
 
-#! /usr/bin/python
-# Written by Dan Mandle http://dan.mandle.me September 2012
-# License: GPL 2.0 
-import os
-from gps import *
-from time import *
-import time
-import threading
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.bind((HOST, PORT))
+    s.listen()
+    conn, addr = s.accept()
+    with conn:
+        print('Connected by', addr)
+        while True:
+            data = conn.recv(1024)
+            print('Received', repr(data))
+            if not data:
+                break
 
-gpsd = None #seting the global variable
-
-os.system('clear') #clear the terminal (optional)
-
-class GpsPoller(threading.Thread):
-  def __init__(self):
-    threading.Thread.__init__(self)
-    global gpsd #bring it in scope
-    gpsd = gps(mode=WATCH_ENABLE) #starting the stream of info
-    self.current_value = None
-    self.running = True #setting the thread running to true
-
-  def run(self):
-    global gpsd
-    while gpsp.running:
-      gpsd.next() #this will continue to loop and grab EACH set of gpsd info to clear the buffer
-
-if __name__ == '__main__':
-  with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
-    gpsp = GpsPoller() # create the thread
-    try:
-      gpsp.start() # start it up
-      while True:
-        #It may take a second or two to get good data
-        #print gpsd.fix.latitude,', ',gpsd.fix.longitude,'  Time: ',gpsd.utc
-  
-        os.system('clear')
-  
-        print (' GPS reading'                                           )
-        print ('----------------------------------------')
-        print ('latitude    ' , gpsd.fix.latitude)
-        print ('longitude   ' , gpsd.fix.longitude)
-        print ('time utc    ' , gpsd.utc,' + ', gpsd.fix.time)
-        print ('altitude (m)' , gpsd.fix.altitude)
-        print ('eps         ' , gpsd.fix.eps)
-        print ('epx         ' , gpsd.fix.epx)
-        print ('epv         ' , gpsd.fix.epv)
-        print ('ept         ' , gpsd.fix.ept)
-        print ('speed (m/s) ' , gpsd.fix.speed)
-        print ('climb       ' , gpsd.fix.climb)
-        print ('track       ' , gpsd.fix.track)
-        print ('mode        ' , gpsd.fix.mode)
-        print ('sats        ' , gpsd.satellites)
-  
-        time.sleep(2) #set to whatever
-  
-  
-        json = { "altitude": gpsd.fix.altitude, "speed": gpsd.fix.speed, "longitude": gpsd.fix.longitude, "climb": gpsd.fix.climb, "latitude": gpsd.fix.latitude }
-        data = str(json)
-        bytes = data.encode()
-        s.sendall(bytes)
-        print('Sent')
-        time.sleep(2)
-  
-  
-    except (KeyboardInterrupt, SystemExit): #when you press ctrl+c
-      print ("\nKilling Thread...")
-      gpsp.running = False
-      gpsp.join() # wait for the thread to finish what it's doing
-    print ("Done.\nExiting.")
-  
-  
